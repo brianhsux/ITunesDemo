@@ -2,4 +2,5 @@
     <string name="app_name">ITunesDemo</string>
     <string name="text_close">Close</string>
     <string name="message_playing_track">Playing</string>
+    <string name="error_response">No result!! Please try again.</string>
 </resources>

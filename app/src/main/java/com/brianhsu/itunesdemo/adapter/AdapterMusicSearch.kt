@@ -40,9 +40,9 @@ class AdapterMusicSearch(private val context: Context, private val musicTerms: L
 
             try {
                 Glide.with(context).load(musicTerm.artworkUrl60)
-                        .crossFade()
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(musicImage)
+                    .crossFade()
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .into(musicImage)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

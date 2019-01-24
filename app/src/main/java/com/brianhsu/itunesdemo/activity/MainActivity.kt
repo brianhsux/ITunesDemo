@@ -16,9 +16,9 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
-import android.content.DialogInterface
 import android.net.Uri
 import android.support.v7.app.AlertDialog
+import android.view.View
 import com.brianhsu.itunesdemo.BuildConfig
 import com.brianhsu.itunesdemo.R
 
@@ -58,6 +58,8 @@ class MainActivity : AppCompatActivity() {
 
         setDataAndList()
         setSearchComponent()
+
+        progressBar.visibility = View.INVISIBLE
     }
 
     private fun setDataAndList() {
@@ -79,29 +81,34 @@ class MainActivity : AppCompatActivity() {
     private fun setSearchComponent() {
         searchView.setOnQueryTextListener (object: SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(searchStr: String?): Boolean {
+                progressBar.visibility = View.VISIBLE
                 val searchService = SearchService.create()
                 compositeDisposable = CompositeDisposable()
 
                 if (searchStr != null) {
                     musicListItems.clear()
                     val response: Observable<SearchResultModel> =
-                            searchService.getSearchResults(searchStr, SearchService.ENTITY_TYPE_MUSIC_TRACK)
+                        searchService.getSearchResults(searchStr, SearchService.ENTITY_TYPE_MUSIC_TRACK)
                     compositeDisposable?.add(
-                            response
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribeOn(Schedulers.io())
-                                    .subscribe({
-                                        result ->
-                                        val resultModels = result.resultModels
-                                        for (item: MusicTermModel in resultModels) {
-                                            Log.d(DEBUG_TAG, "artistViewUrl: ${item.artistViewUrl}")
-                                            musicListItems.add(item)
-                                        }
-                                        refreshMusicItems()
-                                    }, {
-                                        error ->
-                                        Log.d(DEBUG_TAG, "Result error: $error")
-                                    }))
+                        response
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe({
+                            result ->
+                            progressBar.visibility = View.INVISIBLE
+                            val resultModels = result.resultModels
+                            for (item: MusicTermModel in resultModels) {
+                                Log.d(DEBUG_TAG, "artistViewUrl: ${item.artistViewUrl}")
+                                musicListItems.add(item)
+                            }
+                            refreshMusicItems()
+                        }, {
+                            error ->
+                            progressBar.visibility = View.INVISIBLE
+                            Log.d(DEBUG_TAG, "Result error: $error")
+                            showErrorMessage(error.toString())
+                        })
+                    )
 
                 }
 
@@ -125,15 +132,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshMusicItems() {
-        musicRecyclerView?.adapter?.notifyDataSetChanged()
+        if (musicListItems.size > 0) {
+            musicRecyclerView?.adapter?.notifyDataSetChanged()
+        } else {
+            showErrorMessage(getString(R.string.error_response))
+        }
     }
 
     private fun showTrackInfoDialog(musicTermModel: MusicTermModel) {
         AlertDialog.Builder(this)
-                .setTitle(musicTermModel.trackName)
-                .setMessage(musicTermModel.artistName)
-                .setPositiveButton(R.string.text_close, null)
-                .setOnDismissListener(DialogInterface.OnDismissListener { player?.stop() }).show()
+            .setTitle(musicTermModel.trackName)
+            .setMessage(musicTermModel.artistName)
+            .setPositiveButton(R.string.text_close, null)
+            .setOnDismissListener { player?.stop() }.show()
     }
 
     private fun initExoPlayer() {
@@ -161,5 +172,10 @@ class MainActivity : AppCompatActivity() {
     private fun getMediaSource(): MediaSource {
         return ExtractorMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(Uri.parse(currentMediaUrl))
+    }
+
+    private fun showErrorMessage(error: String) {
+        val errorToast: String = error
+        Toast.makeText(this, errorToast, Toast.LENGTH_SHORT).show()
     }
 }

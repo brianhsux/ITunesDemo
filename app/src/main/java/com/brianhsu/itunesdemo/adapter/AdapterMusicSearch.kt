@@ -8,12 +8,12 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.brianhsu.itunesdemo.R
-import com.brianhsu.itunesdemo.model.MusicTermModel
+import com.brianhsu.itunesdemo.model.MusicTermData
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 
-class AdapterMusicSearch(private val context: Context, private val musicTerms: List<MusicTermModel>,
-                         private val itemClick: (MusicTermModel) -> Unit) :
+class AdapterMusicSearch(private val context: Context, private val musicTerms: List<MusicTermData>,
+                         private val itemClick: (MusicTermData) -> Unit) :
         RecyclerView.Adapter<AdapterMusicSearch.ViewHolder>() {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -29,14 +29,14 @@ class AdapterMusicSearch(private val context: Context, private val musicTerms: L
         return musicTerms.count()
     }
 
-    inner class ViewHolder(itemView: View, private val itemClick: (MusicTermModel) -> Unit) :
+    inner class ViewHolder(itemView: View, private val itemClick: (MusicTermData) -> Unit) :
             RecyclerView.ViewHolder(itemView) {
         private var musicImage: ImageView? = itemView.findViewById(R.id.musicImage)
         private var musicTitle: TextView? = itemView.findViewById(R.id.musicTitleTxt)
         private var musicDes: TextView? = itemView.findViewById(R.id.musicDesTxt)
         private var musicPlayBtn: ImageView? = itemView.findViewById(R.id.playMusicBtn)
 
-        fun bindMusicItem(context: Context, musicTerm: MusicTermModel) {
+        fun bindMusicItem(context: Context, musicTerm: MusicTermData) {
 
             try {
                 Glide.with(context).load(musicTerm.artworkUrl60)

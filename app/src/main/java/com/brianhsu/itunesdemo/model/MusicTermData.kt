@@ -1,6 +1,6 @@
 package com.brianhsu.itunesdemo.model
 
-data class MusicTermModel(
+data class MusicTermData(
     val artistId: Int,
     val artistName: String,
     val artistViewUrl: String,

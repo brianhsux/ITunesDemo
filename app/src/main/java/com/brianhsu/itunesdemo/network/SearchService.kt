@@ -1,6 +1,6 @@
 package com.brianhsu.itunesdemo.network
 
-import com.brianhsu.itunesdemo.model.SearchResultModel
+import com.brianhsu.itunesdemo.model.SearchResultData
 import io.reactivex.Observable
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -14,7 +14,7 @@ interface SearchService {
     fun getSearchResults(
             @Query("term") searchTerm: String,
             @Query("entity") entityType: String)
-            : Observable<SearchResultModel>
+            : Observable<SearchResultData>
 
     companion object {
         private const val BASE_ITUNES_URL: String = "https://itunes.apple.com/"

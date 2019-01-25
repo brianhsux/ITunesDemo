@@ -1,26 +1,20 @@
 package com.brianhsu.itunesdemo.activity
 
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
+import android.databinding.DataBindingUtil
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.widget.SearchView
-import android.support.v7.widget.StaggeredGridLayoutManager
-import android.util.Log
 import android.widget.Toast
-import com.brianhsu.itunesdemo.adapter.AdapterMusicSearch
-import com.brianhsu.itunesdemo.model.MusicTermModel
-import com.brianhsu.itunesdemo.model.SearchResultModel
-import com.brianhsu.itunesdemo.network.SearchService
-import com.brianhsu.itunesdemo.services.MusicItemService
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import com.brianhsu.itunesdemo.model.MusicTermData
 import kotlinx.android.synthetic.main.activity_main.*
 import android.net.Uri
 import android.support.v7.app.AlertDialog
-import android.view.View
 import com.brianhsu.itunesdemo.BuildConfig
 import com.brianhsu.itunesdemo.R
+import com.brianhsu.itunesdemo.databinding.ActivityMainBinding
+import com.brianhsu.itunesdemo.viewmodel.MainViewModel
 
 import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.DefaultRenderersFactory
@@ -35,90 +29,20 @@ class MainActivity : AppCompatActivity() {
 
     val DEBUG_TAG: String = "ITunesDemo"
 
-    var compositeDisposable: CompositeDisposable? = null
     private var player: SimpleExoPlayer? = null
     private var currentMediaUrl: String? = null
     private var playbackPosition: Long = 0
     private var dataSourceFactory: DefaultHttpDataSourceFactory? = null
-    private var musicListItems: MutableList<MusicTermModel> = mutableListOf()
+
+    lateinit var binding: ActivityMainBinding
+    lateinit var mainViewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        init()
-    }
-
-    private fun init() {
-        musicRecyclerView.layoutManager = StaggeredGridLayoutManager(1, StaggeredGridLayoutManager.VERTICAL)
-        musicRecyclerView.setHasFixedSize(true)
-        musicRecyclerView.isNestedScrollingEnabled = false
-
-        musicListItems = MusicItemService.musicItems
-
+        setUpBindings(savedInstanceState)
         setDataAndList()
         setSearchComponent()
-
-        progressBar.visibility = View.INVISIBLE
-    }
-
-    private fun setDataAndList() {
-        //set data and list adapter
-        val gridSectionAdapter = AdapterMusicSearch(this, musicListItems) {
-            musicItem ->
-            player?.stop()  // Stop whatever is playing
-            val playTrackToast: String = getString(R.string.message_playing_track) + " " + musicItem.trackName
-            Toast.makeText(this, playTrackToast, Toast.LENGTH_SHORT).show()
-
-            currentMediaUrl = musicItem.previewUrl
-            player?.prepare(getMediaSource(), true, false)
-            showTrackInfoDialog(musicItem)
-        }
-
-        musicRecyclerView?.adapter = gridSectionAdapter
-    }
-
-    private fun setSearchComponent() {
-        searchView.setOnQueryTextListener (object: SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(searchStr: String?): Boolean {
-                progressBar.visibility = View.VISIBLE
-                val searchService = SearchService.create()
-                compositeDisposable = CompositeDisposable()
-
-                if (searchStr != null) {
-                    musicListItems.clear()
-                    val response: Observable<SearchResultModel> =
-                        searchService.getSearchResults(searchStr, SearchService.ENTITY_TYPE_MUSIC_TRACK)
-                    compositeDisposable?.add(
-                        response
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe({
-                            result ->
-                            progressBar.visibility = View.INVISIBLE
-                            val resultModels = result.resultModels
-                            for (item: MusicTermModel in resultModels) {
-                                Log.d(DEBUG_TAG, "artistViewUrl: ${item.artistViewUrl}")
-                                musicListItems.add(item)
-                            }
-                            refreshMusicItems()
-                        }, {
-                            error ->
-                            progressBar.visibility = View.INVISIBLE
-                            Log.d(DEBUG_TAG, "Result error: $error")
-                            showErrorMessage(error.toString())
-                        })
-                    )
-
-                }
-
-                return false
-            }
-
-            override fun onQueryTextChange(p0: String?): Boolean {
-                return false
-            }
-        })
     }
 
     override fun onStart() {
@@ -131,18 +55,63 @@ class MainActivity : AppCompatActivity() {
         releasePlayer()
     }
 
-    private fun refreshMusicItems() {
-        if (musicListItems.size > 0) {
-            musicRecyclerView?.adapter?.notifyDataSetChanged()
-        } else {
-            showErrorMessage(getString(R.string.error_response))
+    private fun setUpBindings(savedInstanceState: Bundle?) {
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        mainViewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
+
+        if (savedInstanceState == null) {
+            mainViewModel.init()
         }
+
+        binding.mainViewModel = mainViewModel
     }
 
-    private fun showTrackInfoDialog(musicTermModel: MusicTermModel) {
+    private fun setDataAndList() {
+        mainViewModel.musicDataList.observe(this, Observer<List<MusicTermData>> {
+            musicListItems ->
+            mainViewModel.isSearching.set(false)
+            if (musicListItems != null && musicListItems.isNotEmpty()) {
+                mainViewModel.setMusicDataInAdapter(musicListItems)
+            } else {
+                showErrorMessage(getString(R.string.error_response))
+            }
+        })
+
+        mainViewModel.selected.observe(this, Observer<MusicTermData> {
+            musicItem ->
+            if (musicItem != null) {
+                player?.stop()  // Stop whatever is playing
+                val playTrackToast: String = getString(R.string.message_playing_track) + " " + musicItem.trackName
+                Toast.makeText(this, playTrackToast, Toast.LENGTH_SHORT).show()
+
+                currentMediaUrl = musicItem.previewUrl
+                player?.prepare(getMediaSource(), true, false)
+                showTrackInfoDialog(musicItem)
+            }
+        })
+    }
+
+    private fun setSearchComponent() {
+        searchView.setOnQueryTextListener (object: SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(searchStr: String?): Boolean {
+                if (searchStr != null) {
+                    mainViewModel.retrieveMusicData(searchStr)
+                    mainViewModel.isSearching.set(true)
+                }
+
+                return false
+            }
+
+            override fun onQueryTextChange(p0: String?): Boolean {
+                return false
+            }
+        })
+    }
+
+    private fun showTrackInfoDialog(musicTermData: MusicTermData) {
         AlertDialog.Builder(this)
-            .setTitle(musicTermModel.trackName)
-            .setMessage(musicTermModel.artistName)
+            .setTitle(musicTermData.trackName)
+            .setMessage(musicTermData.artistName)
             .setPositiveButton(R.string.text_close, null)
             .setOnDismissListener { player?.stop() }.show()
     }

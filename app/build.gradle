@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'kotlin-kapt'
+
 android {
     compileSdkVersion 28
     defaultConfig {
@@ -19,6 +21,12 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    dataBinding {
+        enabled = true
+    }
+    kapt {
+        generateStubs = true
     }
 }
 
@@ -43,4 +51,5 @@ dependencies {
     // Media player
     implementation 'com.google.android.exoplayer:exoplayer-core:2.7.3'
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.7.3'
+    implementation "android.arch.lifecycle:extensions:1.1.1"
 }

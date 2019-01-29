@@ -23,17 +23,10 @@ class MusicDataModel {
                 searchService.getSearchResults(searchStr, SearchService.ENTITY_TYPE_MUSIC_TRACK)
         compositeDisposable?.add(
             response
-            .observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
-                result ->
-                val resultModels = result.resultData
-                for (musicTerm: MusicTermData in resultModels) {
-                    Log.d(DEBUG_TAG, "artistViewUrl: ${musicTerm.artistViewUrl}")
-                    musicListItems.add(musicTerm)
-                }
-
-                musicListLiveData.value = musicListItems
+                musicListLiveData.value = it.resultData
             }, {
                 error ->
                 Log.d(DEBUG_TAG, "Result error: $error")

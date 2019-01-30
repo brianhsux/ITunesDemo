@@ -13,7 +13,7 @@ class MainViewModel : ViewModel() {
 
     lateinit var musicDataModel: MusicDataModel
     lateinit var musicSearchAdapter: MusicSearchAdapter
-    var selected: MutableLiveData<MusicTermData> = MutableLiveData()
+    val selected: MutableLiveData<MusicTermData> = MutableLiveData()
     val isSearching: ObservableBoolean = ObservableBoolean()
 
     val musicDataList: MutableLiveData<List<MusicTermData>>

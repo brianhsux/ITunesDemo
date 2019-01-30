@@ -26,6 +26,7 @@ class MusicDataModel {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
+                Log.d(DEBUG_TAG, "Result it: $it")
                 musicListLiveData.value = it.resultData
             }, {
                 error ->

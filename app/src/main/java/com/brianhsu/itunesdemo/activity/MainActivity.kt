@@ -11,9 +11,11 @@ import com.brianhsu.itunesdemo.model.MusicTermData
 import kotlinx.android.synthetic.main.activity_main.*
 import android.net.Uri
 import android.support.v7.app.AlertDialog
+import android.util.Log
 import com.brianhsu.itunesdemo.BuildConfig
 import com.brianhsu.itunesdemo.R
 import com.brianhsu.itunesdemo.databinding.ActivityMainBinding
+import com.brianhsu.itunesdemo.network.SearchService
 import com.brianhsu.itunesdemo.viewmodel.MainViewModel
 
 import com.google.android.exoplayer2.DefaultLoadControl
@@ -24,6 +26,8 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import dagger.android.AndroidInjection
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,8 +41,18 @@ class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
     lateinit var mainViewModel: MainViewModel
 
+    @Inject
+    lateinit var searchService: SearchService
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        AndroidInjection.inject(this)
         super.onCreate(savedInstanceState)
+
+        if (searchService != null) {
+            Log.d(DEBUG_TAG, "Hello Dagger!!!!!")
+        } else {
+            Log.d(DEBUG_TAG, "Fail Dagger!!!!!")
+        }
 
         setUpBindings(savedInstanceState)
         setDataAndList()
